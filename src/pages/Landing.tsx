@@ -6,7 +6,7 @@ import { Link } from 'react-router';
 import { Button } from '../app/components/ui/button';
 import { AlertTriangle, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
-import { SHIELD_AGENTS, HERO_STATS, PAIN_QUOTES, MARKET_STATS, PERSONA_CTAS } from './landing-data';
+import { SHIELD_AGENTS, HERO_STATS, PAIN_QUOTES, MARKET_STATS, PERSONA_CTAS, BUYER_PLANS, SELLER_PLANS } from './landing-data';
 
 function useCountUp(target: number, dur = 2000) {
   const [count, setCount] = useState(0);
@@ -66,6 +66,7 @@ const ctaColors: Record<string, { accent: string; bg: string; border: string }> 
 export function LandingPage() {
   const counters = HERO_STATS.map(s => ({ ...s, c: useCountUp(s.value) }));
   const waitlist = useWaitlist();
+  const [planTab, setPlanTab] = useState<'buyer' | 'seller'>('buyer');
 
   return (
     <div className="landing-page" style={{ background: '#f8fafc' }}>
@@ -273,7 +274,102 @@ export function LandingPage() {
         </div>
       </Section>
 
+      {/* ── Pricing Plans ── */}
+      <Section id="plans" style={{ padding: '80px 0', background: '#fff' }}>
+        <div className="landing-container">
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <span className="landing-section-tag">요금 플랜</span>
+            <h2 className="landing-section-title">나에게 맞는 <strong>플랜</strong>을 선택하세요</h2>
+            <p style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>수요기업과 SI 파트너 모두를 위한 맞춤 플랜</p>
+          </div>
+
+          {/* Tab Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-flex', background: '#f1f5f9', borderRadius: 12, padding: 4 }}>
+              <button
+                onClick={() => setPlanTab('buyer')}
+                style={{ padding: '10px 28px', borderRadius: 10, fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: planTab === 'buyer' ? '#0f172a' : 'transparent',
+                  color: planTab === 'buyer' ? '#fff' : '#64748b' }}
+              >🏭 수요기업 (Buyer)</button>
+              <button
+                onClick={() => setPlanTab('seller')}
+                style={{ padding: '10px 28px', borderRadius: 10, fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: planTab === 'seller' ? '#0f172a' : 'transparent',
+                  color: planTab === 'seller' ? '#fff' : '#64748b' }}
+              >🔧 SI 파트너 (Seller)</button>
+            </div>
+          </div>
+
+          {/* Plan Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(290px,1fr))', gap: 24 }}>
+            {(planTab === 'buyer' ? BUYER_PLANS : SELLER_PLANS).map((plan, i) => {
+              const planColors: Record<string, { accent: string; bg: string; border: string; badge: string }> = {
+                slate:   { accent: '#475569', bg: '#f8fafc', border: '#e2e8f0', badge: '#64748b' },
+                blue:    { accent: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', badge: '#2563eb' },
+                emerald: { accent: '#059669', bg: '#ecfdf5', border: '#a7f3d0', badge: '#059669' },
+                amber:   { accent: '#d97706', bg: '#fffbeb', border: '#fde68a', badge: '#d97706' },
+              };
+              const c = planColors[plan.color];
+              const isHighlighted = 'badge' in plan && plan.badge;
+              return (
+                <div key={plan.id} style={{
+                  background: '#fff', borderRadius: 20, padding: '32px 28px',
+                  border: `2px solid ${isHighlighted ? c.accent : c.border}`,
+                  display: 'flex', flexDirection: 'column', position: 'relative',
+                  boxShadow: isHighlighted ? `0 8px 32px ${c.accent}20` : 'none',
+                }}>
+                  {isHighlighted && (
+                    <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
+                      background: c.accent, color: '#fff', fontSize: 12, fontWeight: 800,
+                      padding: '4px 16px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+                      ⭐ {'badge' in plan ? plan.badge : ''}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontSize: 28 }}>{plan.emoji}</span>
+                    <div>
+                      <h3 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>{plan.name}</h3>
+                      <p style={{ fontSize: 12, color: c.accent, fontWeight: 700, margin: 0 }}>{plan.tagline}</p>
+                    </div>
+                  </div>
+
+                  <div style={{ margin: '16px 0', padding: '16px', background: c.bg, borderRadius: 12 }}>
+                    <p style={{ fontSize: 22, fontWeight: 900, color: c.accent, margin: 0 }}>{plan.price}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 8px' }}>{plan.priceNote}</p>
+                    <p style={{ fontSize: 13, color: '#475569', fontWeight: 600, margin: 0 }}>✦ {plan.coreValue}</p>
+                  </div>
+
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {plan.features.map((f, fi) => (
+                      <li key={fi} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13,
+                        color: f.included ? '#334155' : '#cbd5e1' }}>
+                        <span style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }}>{f.included ? '✅' : '⬜'}</span>
+                        {f.text}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div style={{ marginTop: 'auto' }}>
+                    <Link to={plan.ctaLink}>
+                      <Button style={{
+                        width: '100%', height: 48, borderRadius: 12, fontWeight: 700, fontSize: 14,
+                        background: isHighlighted ? c.accent : '#f1f5f9',
+                        color: isHighlighted ? '#fff' : '#334155', border: 'none'
+                      }}>
+                        {plan.cta} <ArrowRight style={{ width: 15, height: 15, marginLeft: 6 }} />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Section>
+
       {/* ── Final Urgency CTA ── */}
+
       <section style={{ padding: '80px 0', background: '#0f172a', borderTop: '6px solid #dc2626' }}>
         <div className="landing-container" style={{ textAlign: 'center', maxWidth: 700 }}>
           <Calendar style={{ width: 44, height: 44, color: '#ef4444', margin: '0 auto 16px' }} />
