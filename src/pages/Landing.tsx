@@ -1,595 +1,349 @@
 /**
- * Landing.tsx
- * 고객 Hook 단계 랜딩페이지 — C유형 (결과 지향형) 전략 기반
- * 
- * 전략 요약:
- * - 히어로: 명확한 이득 헤드라인 + 핵심 수치 + CTA
- * - 신뢰 증거: 로고월 + 누적 수치
- * - 워크플로우: Input → Platform → Output 3단계 시각화
- * - ROI: Before/After 비교 수치
- * - 결과물 갤러리: 플랫폼 기능 쇼케이스
- * - 반복 CTA: 상단/중단/하단 배치
+ * Landing.tsx — S.H.I.E.L.D. 로봇 도입 감리단 컨셉
+ * 6개 AI 에이전트가 고객의 자금과 프로젝트를 완전 통제
  */
-
 import { Link } from 'react-router';
 import { Button } from '../app/components/ui/button';
-import {
-  Search, Shield, Calculator, Award, ArrowRight,
-  CheckCircle2, Clock, TrendingDown, TrendingUp,
-  Building2, Cpu, Wrench, ChevronRight, Zap,
-  BarChart3, FileCheck, Users, ShieldCheck, Bot
-} from 'lucide-react';
+import { AlertTriangle, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import { SHIELD_AGENTS, HERO_STATS, PAIN_QUOTES, MARKET_STATS, PERSONA_CTAS } from './landing-data';
 
-/* ─── Animated Counter Hook ─── */
-function useCountUp(target: number, duration = 2000, suffix = '') {
+function useCountUp(target: number, dur = 2000) {
   const [count, setCount] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [started, setStarted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasStarted) {
-          setHasStarted(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [hasStarted]);
-
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStarted(true); }, { threshold: 0.3 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
   useEffect(() => {
-    if (!hasStarted) return;
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    const interval = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(interval);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, duration / steps);
-    return () => clearInterval(interval);
-  }, [hasStarted, target, duration]);
-
-  return { count, ref, suffix };
+    if (!started) return;
+    let cur = 0; const inc = target / 60;
+    const iv = setInterval(() => { cur += inc; if (cur >= target) { setCount(target); clearInterval(iv); } else setCount(Math.floor(cur)); }, dur / 60);
+    return () => clearInterval(iv);
+  }, [started, target, dur]);
+  return { count, ref };
 }
 
-/* ─── Fade-in-on-scroll Hook ─── */
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
+  const [vis, setVis] = useState(false);
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVis(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
   }, []);
-
-  return { ref, isVisible };
+  return { ref, vis };
 }
 
-/* ─── Section Component ─── */
 function Section({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
-  const { ref, isVisible } = useFadeIn();
-  return (
-    <section
-      id={id}
-      ref={ref}
-      className={`landing-section ${isVisible ? 'landing-visible' : ''} ${className}`}
-    >
-      {children}
-    </section>
-  );
+  const { ref, vis } = useFadeIn();
+  return <section id={id} ref={ref} className={`landing-section ${vis ? 'landing-visible' : ''} ${className}`}>{children}</section>;
 }
 
-/* ─── Logo Wall Data ─── */
-const partnerLogos = [
-  { name: 'FANUC', icon: Cpu },
-  { name: 'ABB Robotics', icon: Bot },
-  { name: 'KUKA', icon: Cpu },
-  { name: 'Universal Robots', icon: Bot },
-  { name: 'Doosan Robotics', icon: Cpu },
-  { name: 'Hyundai Robotics', icon: Bot },
-];
+function useWaitlist() {
+  const [n, setN] = useState(47);
+  useEffect(() => { const iv = setInterval(() => setN(p => Math.random() > 0.6 ? p + 1 : p), 12000); return () => clearInterval(iv); }, []);
+  return n;
+}
 
-/* ─── Main Component ─── */
+const agentColors: Record<string, { bg: string; text: string; border: string; glow: string }> = {
+  red:     { bg: '#fef2f2', text: '#dc2626', border: '#fecaca', glow: 'rgba(220,38,38,0.15)' },
+  blue:    { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe', glow: 'rgba(37,99,235,0.15)' },
+  amber:   { bg: '#fffbeb', text: '#d97706', border: '#fde68a', glow: 'rgba(217,119,6,0.15)' },
+  emerald: { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0', glow: 'rgba(5,150,105,0.15)' },
+  purple:  { bg: '#f5f3ff', text: '#7c3aed', border: '#ddd6fe', glow: 'rgba(124,58,237,0.15)' },
+  slate:   { bg: '#f8fafc', text: '#475569', border: '#e2e8f0', glow: 'rgba(71,85,105,0.1)' },
+};
+
+const ctaColors: Record<string, { accent: string; bg: string; border: string }> = {
+  red:   { accent: '#dc2626', bg: '#fff5f5', border: '#fecaca' },
+  blue:  { accent: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  slate: { accent: '#475569', bg: '#f8fafc', border: '#e2e8f0' },
+};
+
 export function LandingPage() {
-  const stat1 = useCountUp(1240, 2000);
-  const stat2 = useCountUp(98, 2000);
-  const stat3 = useCountUp(340, 2000);
-  const stat4 = useCountUp(24, 1500);
+  const counters = HERO_STATS.map(s => ({ ...s, c: useCountUp(s.value) }));
+  const waitlist = useWaitlist();
 
   return (
-    <div className="landing-page">
+    <div className="landing-page" style={{ background: '#f8fafc' }}>
 
-      {/* ━━━ Sticky Mini Header ━━━ */}
+      {/* ── Header ── */}
       <header className="landing-header">
         <div className="landing-container landing-header-inner">
           <Link to="/" className="landing-logo">
-            <div className="landing-logo-icon">R</div>
-            <span className="landing-logo-text">로봇 SI 플랫폼</span>
+            <div className="landing-logo-icon" style={{ background: 'linear-gradient(135deg,#dc2626,#7f1d1d)' }}>S</div>
+            <span className="landing-logo-text" style={{ fontWeight: 800 }}>S.H.I.E.L.D. 로봇 보증 플랫폼</span>
           </Link>
           <nav className="landing-nav">
-            <a href="#features" className="landing-nav-link">주요 기능</a>
-            <a href="#how-it-works" className="landing-nav-link">이용 방법</a>
-            <a href="#roi" className="landing-nav-link">도입 효과</a>
+            <a href="#why" className="landing-nav-link">왜 필요한가</a>
+            <a href="#shield" className="landing-nav-link">6중 감리 시스템</a>
+            <a href="#cta" className="landing-nav-link">사전 예약</a>
             <Link to="/home">
-              <Button size="sm" className="landing-cta-btn">
-                서비스 시작하기
+              <Button size="sm" style={{ background: '#dc2626', color: '#fff', fontWeight: 700, borderRadius: 8 }}>
+                사전 예약하기
               </Button>
             </Link>
           </nav>
         </div>
       </header>
 
-      {/* ━━━ HERO SECTION ━━━ */}
-      <section className="landing-hero">
-        <div className="landing-hero-bg" aria-hidden="true">
-          <div className="landing-hero-gradient" />
-          <div className="landing-hero-grid" />
-        </div>
-
-        <div className="landing-container landing-hero-content">
-          <div className="landing-hero-badge">
-            <Zap className="w-4 h-4" />
-            <span>국내 1위 로봇 SI 매칭 플랫폼</span>
+      {/* ── HERO ── */}
+      <section style={{ background: 'linear-gradient(160deg,#0f172a 0%,#1e1b4b 100%)', padding: '140px 0 80px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '-10%', width: 600, height: 600, background: 'radial-gradient(circle,rgba(220,38,38,0.12),transparent 70%)', borderRadius: '50%' }} />
+        <div className="landing-container" style={{ textAlign: 'center', maxWidth: 860, position: 'relative' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 18px', borderRadius: 999, background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#fca5a5', fontSize: 13, fontWeight: 700, marginBottom: 28 }}>
+            <AlertTriangle style={{ width: 16, height: 16 }} />
+            SI 업체 파산·잠적·AS 단절 — 6중 AI 감리 시스템이 원천 차단합니다
           </div>
 
-          <h1 className="landing-hero-title">
-            로봇 도입, 더 이상
-            <br />
-            <span className="landing-hero-accent">혼자 고민하지 마세요</span>
+          <h1 style={{ fontSize: 'clamp(28px,5vw,54px)', fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 12 }}>
+            영업사원의 약속은 믿지 마세요.
           </h1>
-
-          <p className="landing-hero-subtitle">
-            검증된 SI 파트너 매칭부터 에스크로 안전결제, AS 보증까지 —
-            <br className="hidden sm:block" />
-            로봇 도입의 모든 과정을 하나의 플랫폼에서 해결하세요.
-          </p>
-
-          <div className="landing-hero-cta-group">
-            <Link to="/home">
-              <Button size="lg" className="landing-primary-btn">
-                지금 무료로 시작하기
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/calculator">
-              <Button size="lg" variant="outline" className="landing-outline-btn">
-                ROI 먼저 계산해보기
-              </Button>
-            </Link>
-          </div>
-
-          {/* Hero Stats */}
-          <div className="landing-hero-stats">
-            <div ref={stat1.ref} className="landing-stat-item">
-              <span className="landing-stat-number">{stat1.count.toLocaleString()}+</span>
-              <span className="landing-stat-label">누적 매칭 건수</span>
-            </div>
-            <div className="landing-stat-divider" />
-            <div ref={stat2.ref} className="landing-stat-item">
-              <span className="landing-stat-number">{stat2.count}%</span>
-              <span className="landing-stat-label">고객 만족도</span>
-            </div>
-            <div className="landing-stat-divider" />
-            <div ref={stat3.ref} className="landing-stat-item">
-              <span className="landing-stat-number">{stat3.count}+</span>
-              <span className="landing-stat-label">검증 파트너사</span>
-            </div>
-            <div className="landing-stat-divider" />
-            <div ref={stat4.ref} className="landing-stat-item">
-              <span className="landing-stat-number">{stat4.count}h</span>
-              <span className="landing-stat-label">긴급 AS 출동</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ━━━ SOCIAL PROOF — Logo Wall ━━━ */}
-      <Section className="landing-logos-section">
-        <div className="landing-container">
-          <p className="landing-logos-label">국내외 주요 로봇 제조사와 함께합니다</p>
-          <div className="landing-logos-grid">
-            {partnerLogos.map((logo) => (
-              <div key={logo.name} className="landing-logo-card">
-                <logo.icon className="w-8 h-8 text-gray-400" />
-                <span className="landing-logo-name">{logo.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ VALUE PROPOSITION — Why Us ━━━ */}
-      <Section id="features" className="landing-features-section">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <span className="landing-section-tag">왜 우리 플랫폼인가요?</span>
-            <h2 className="landing-section-title">
-              경쟁사가 아닌 <strong>우리를 선택해야 하는 이유</strong>
-            </h2>
-            <p className="landing-section-desc">
-              기능 나열이 아닌, 고객이 직접 느낄 수 있는 혜택을 제공합니다.
-            </p>
-          </div>
-
-          <div className="landing-features-grid">
-            {[
-              {
-                icon: Search,
-                title: '3분 안에 최적 파트너 매칭',
-                desc: '재무등급, 시공 성공률, 제조사 인증 뱃지를 기반으로 AI가 최적의 SI 파트너를 추천합니다.',
-                color: 'blue',
-              },
-              {
-                icon: ShieldCheck,
-                title: '에스크로로 100% 자금 보호',
-                desc: '시공 완료 및 검수 승인 전까지 플랫폼이 자금을 안전하게 보관합니다. 사기 위험 제로.',
-                color: 'emerald',
-              },
-              {
-                icon: Wrench,
-                title: 'SI 부도에도 AS 보증 유지',
-                desc: 'SI 파트너가 폐업해도 24시간 내 대체 엔지니어가 출동합니다. 업계 유일 안심 보증.',
-                color: 'purple',
-              },
-              {
-                icon: BarChart3,
-                title: 'RaaS로 초기 비용 75% 절감',
-                desc: 'CAPEX·리스·RaaS(구독형) 3가지 옵션을 비교하고 최적의 투자 방식을 선택하세요.',
-                color: 'amber',
-              },
-            ].map((feature, i) => (
-              <div key={i} className={`landing-feature-card landing-feature-${feature.color}`}>
-                <div className={`landing-feature-icon-wrap landing-feature-icon-${feature.color}`}>
-                  <feature.icon className="w-6 h-6" />
-                </div>
-                <h3 className="landing-feature-title">{feature.title}</h3>
-                <p className="landing-feature-desc">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ HOW IT WORKS — Input → Platform → Output (C유형 핵심) ━━━ */}
-      <Section id="how-it-works" className="landing-workflow-section">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <span className="landing-section-tag">이용 방법</span>
-            <h2 className="landing-section-title">
-              복잡한 로봇 도입, <strong>3단계로 끝</strong>
-            </h2>
-            <p className="landing-section-desc">
-              요구사항만 입력하면, 나머지는 플랫폼이 알아서 처리합니다.
-            </p>
-          </div>
-
-          <div className="landing-workflow-steps">
-            {/* Step 1: Input */}
-            <div className="landing-workflow-step">
-              <div className="landing-step-number">1</div>
-              <div className="landing-step-icon-wrap landing-step-blue">
-                <FileCheck className="w-8 h-8" />
-              </div>
-              <h3 className="landing-step-title">요구사항 입력</h3>
-              <p className="landing-step-desc">
-                로봇 종류, 규모, 예산, 일정만 입력하세요.
-                <br />5분이면 충분합니다.
-              </p>
-              <ul className="landing-step-list">
-                <li><CheckCircle2 className="w-4 h-4" /> 업종별 맞춤 템플릿</li>
-                <li><CheckCircle2 className="w-4 h-4" /> RaaS 비용 자동 계산</li>
-              </ul>
-            </div>
-
-            {/* Arrow */}
-            <div className="landing-workflow-arrow">
-              <ChevronRight className="w-8 h-8" />
-            </div>
-
-            {/* Step 2: Platform Magic */}
-            <div className="landing-workflow-step landing-step-highlight">
-              <div className="landing-step-number landing-step-number-accent">2</div>
-              <div className="landing-step-icon-wrap landing-step-indigo">
-                <Zap className="w-8 h-8" />
-              </div>
-              <h3 className="landing-step-title">플랫폼이 매칭</h3>
-              <p className="landing-step-desc">
-                검증된 SI 파트너를 자동 매칭하고
-                <br />에스크로로 안전하게 계약합니다.
-              </p>
-              <ul className="landing-step-list">
-                <li><CheckCircle2 className="w-4 h-4" /> AI 기반 최적 매칭</li>
-                <li><CheckCircle2 className="w-4 h-4" /> 에스크로 자금 보호</li>
-                <li><CheckCircle2 className="w-4 h-4" /> 실시간 진행 추적</li>
-              </ul>
-            </div>
-
-            {/* Arrow */}
-            <div className="landing-workflow-arrow">
-              <ChevronRight className="w-8 h-8" />
-            </div>
-
-            {/* Step 3: Output */}
-            <div className="landing-workflow-step">
-              <div className="landing-step-number">3</div>
-              <div className="landing-step-icon-wrap landing-step-emerald">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <h3 className="landing-step-title">도입 완료 + AS 보증</h3>
-              <p className="landing-step-desc">
-                시공 완료 후에도 지속적인
-                <br />AS SLA 모니터링을 받으세요.
-              </p>
-              <ul className="landing-step-list">
-                <li><CheckCircle2 className="w-4 h-4" /> 검수 완료 후 자동 정산</li>
-                <li><CheckCircle2 className="w-4 h-4" /> 24h 긴급 AS 보증</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ MID CTA ━━━ */}
-      <Section className="landing-mid-cta-section">
-        <div className="landing-container landing-mid-cta-inner">
-          <h2 className="landing-mid-cta-title">로봇 도입, 지금 바로 시작해보세요</h2>
-          <p className="landing-mid-cta-desc">
-            회원가입 없이도 RaaS 계산기를 무료로 이용할 수 있습니다.
-          </p>
-          <div className="landing-mid-cta-buttons">
-            <Link to="/home">
-              <Button size="lg" className="landing-primary-btn">
-                SI 파트너 찾아보기
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/calculator">
-              <Button size="lg" variant="outline" className="landing-white-outline-btn">
-                RaaS 계산기 체험
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ ROI — Before & After (C유형 핵심) ━━━ */}
-      <Section id="roi" className="landing-roi-section">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <span className="landing-section-tag">도입 효과</span>
-            <h2 className="landing-section-title">
-              플랫폼 도입 전 vs 후, <strong>수치로 증명합니다</strong>
-            </h2>
-          </div>
-
-          <div className="landing-roi-grid">
-            {/* Before */}
-            <div className="landing-roi-card landing-roi-before">
-              <div className="landing-roi-badge-before">도입 전</div>
-              <ul className="landing-roi-list">
-                <li>
-                  <Clock className="w-5 h-5 text-red-400" />
-                  <div>
-                    <span className="landing-roi-metric">평균 3~6개월</span>
-                    <span className="landing-roi-label">SI 파트너 탐색 기간</span>
-                  </div>
-                </li>
-                <li>
-                  <TrendingDown className="w-5 h-5 text-red-400" />
-                  <div>
-                    <span className="landing-roi-metric">30% 이상</span>
-                    <span className="landing-roi-label">계약 사기·분쟁 위험</span>
-                  </div>
-                </li>
-                <li>
-                  <Users className="w-5 h-5 text-red-400" />
-                  <div>
-                    <span className="landing-roi-metric">AS 보증 불가</span>
-                    <span className="landing-roi-label">SI 폐업 시 대응 방법 없음</span>
-                  </div>
-                </li>
-                <li>
-                  <TrendingDown className="w-5 h-5 text-red-400" />
-                  <div>
-                    <span className="landing-roi-metric">초기 비용 100%</span>
-                    <span className="landing-roi-label">일시불 CAPEX 부담</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            {/* Arrow */}
-            <div className="landing-roi-arrow">
-              <ArrowRight className="w-10 h-10" />
-            </div>
-
-            {/* After */}
-            <div className="landing-roi-card landing-roi-after">
-              <div className="landing-roi-badge-after">도입 후</div>
-              <ul className="landing-roi-list">
-                <li>
-                  <Zap className="w-5 h-5 text-emerald-500" />
-                  <div>
-                    <span className="landing-roi-metric landing-roi-highlight">평균 3일</span>
-                    <span className="landing-roi-label">AI 기반 즉시 매칭</span>
-                  </div>
-                </li>
-                <li>
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                  <div>
-                    <span className="landing-roi-metric landing-roi-highlight">분쟁 0건</span>
-                    <span className="landing-roi-label">에스크로 + 검수 시스템</span>
-                  </div>
-                </li>
-                <li>
-                  <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                  <div>
-                    <span className="landing-roi-metric landing-roi-highlight">24h 보증</span>
-                    <span className="landing-roi-label">SI 폐업 시에도 긴급 AS</span>
-                  </div>
-                </li>
-                <li>
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                  <div>
-                    <span className="landing-roi-metric landing-roi-highlight">비용 75% 절감</span>
-                    <span className="landing-roi-label">RaaS 구독 모델 전환</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ OUTCOME SHOWCASE — 결과물 갤러리 (C유형 핵심) ━━━ */}
-      <Section className="landing-showcase-section">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <span className="landing-section-tag">플랫폼 기능 미리보기</span>
-            <h2 className="landing-section-title">
-              이 모든 것을 <strong>하나의 플랫폼</strong>에서
-            </h2>
-          </div>
-
-          <div className="landing-showcase-grid">
-            {[
-              {
-                icon: Search,
-                title: 'SI 파트너 검색',
-                desc: '재무등급·인증뱃지·시공이력 기반 다차원 필터링',
-                tag: '수요기업',
-              },
-              {
-                icon: Calculator,
-                title: 'RaaS 비용 계산기',
-                desc: 'CAPEX vs 리스 vs RaaS 3가지 옵션 실시간 비교',
-                tag: '수요기업',
-              },
-              {
-                icon: Shield,
-                title: '에스크로 결제',
-                desc: '검수 승인 시까지 자금 보호 + 자동 정산',
-                tag: '공통',
-              },
-              {
-                icon: Award,
-                title: '제조사 인증 뱃지',
-                desc: '제조사가 직접 발급하는 공식 인증 시스템',
-                tag: 'SI 파트너',
-              },
-              {
-                icon: Building2,
-                title: 'KPI 대시보드',
-                desc: '매출·계약·SLA 현황을 실시간 모니터링',
-                tag: '제조사/관리자',
-              },
-              {
-                icon: Wrench,
-                title: 'AS SLA 모니터링',
-                desc: '응답시간·해결율·고객만족도 자동 추적',
-                tag: '관리자',
-              },
-            ].map((item, i) => (
-              <div key={i} className="landing-showcase-card">
-                <div className="landing-showcase-icon">
-                  <item.icon className="w-6 h-6" />
-                </div>
-                <div className="landing-showcase-tag">{item.tag}</div>
-                <h3 className="landing-showcase-title">{item.title}</h3>
-                <p className="landing-showcase-desc">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ━━━ FINAL CTA ━━━ */}
-      <section className="landing-final-cta">
-        <div className="landing-container landing-final-cta-inner">
-          <h2 className="landing-final-title">
-            로봇 도입의 새로운 기준,
-            <br />
-            지금 경험해보세요
+          <h2 style={{ fontSize: 'clamp(22px,4vw,44px)', fontWeight: 900, lineHeight: 1.25, marginBottom: 24 }}>
+            <span style={{ color: '#f87171' }}>S.H.I.E.L.D.</span>
+            <span style={{ color: '#e2e8f0' }}> 시스템이 지킵니다.</span>
           </h2>
-          <p className="landing-final-desc">
-            수요기업이든, SI 파트너이든 — 각 역할에 최적화된 서비스를 제공합니다.
+
+          <p style={{ fontSize: 'clamp(15px,2vw,18px)', color: '#94a3b8', lineHeight: 1.8, maxWidth: 700, margin: '0 auto 16px' }}>
+            계약이 시작되는 순간, <strong style={{ color: '#e2e8f0' }}>6개의 특화 AI 에이전트</strong>가 동시에 가동됩니다.
           </p>
-          <div className="landing-final-buttons">
-            <Link to="/signup/buyer">
-              <Button size="lg" className="landing-white-btn">
-                수요기업으로 시작하기
-                <ArrowRight className="w-5 h-5 ml-2" />
+          <p style={{ fontSize: 'clamp(14px,1.8vw,17px)', color: '#64748b', lineHeight: 1.8, maxWidth: 660, margin: '0 auto 40px' }}>
+            재무 AI가 업체 파산 리스크를 감시하고, 에스크로 AI가 귀하의 자금 100%를 통제하며,<br />
+            A/S 관제 AI가 고장 시 50km 내 엔지니어를 무조건 출동시킵니다.
+          </p>
+
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 56 }}>
+            <Link to="/home">
+              <Button size="lg" style={{ background: '#dc2626', color: '#fff', fontWeight: 800, fontSize: 16, height: 54, padding: '0 32px', borderRadius: 12, boxShadow: '0 0 30px rgba(220,38,38,0.4)', border: 'none' }}>
+                S.H.I.E.L.D. 보호 시작하기 <ArrowRight style={{ width: 20, height: 20, marginLeft: 8 }} />
               </Button>
             </Link>
-            <Link to="/signup/partner">
-              <Button size="lg" variant="outline" className="landing-ghost-btn">
-                SI 파트너로 참여하기
+            <Link to="/calculator">
+              <Button size="lg" variant="outline" style={{ borderColor: '#334155', color: '#94a3b8', height: 54, padding: '0 28px', borderRadius: 12 }}>
+                RaaS 비용 시뮬레이션
               </Button>
             </Link>
           </div>
-          <p className="landing-final-note">
-            회원가입은 무료이며, 2분 내로 완료됩니다.
-          </p>
+
+          {/* Stats Bar */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, background: 'rgba(15,23,42,0.8)', border: '1px solid #1e293b', borderRadius: 16, padding: '24px 16px', maxWidth: 740, margin: '0 auto' }}>
+            {counters.map((s, i) => (
+              <div key={i} ref={s.c.ref} style={{ textAlign: 'center' }}>
+                <span style={{ display: 'block', fontSize: 'clamp(20px,2.5vw,34px)', fontWeight: 900, color: s.highlight ? '#34d399' : '#fff', marginBottom: 4 }}>
+                  {s.c.count}{s.suffix}
+                </span>
+                <span style={{ fontSize: 11, color: '#475569', fontWeight: 500 }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ━━━ FOOTER ━━━ */}
+      {/* ── WHY: Real Quotes ── */}
+      <Section id="why" className="py-20 bg-white">
+        <div className="landing-container" style={{ maxWidth: 820 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <AlertTriangle style={{ width: 44, height: 44, color: '#ef4444', margin: '0 auto 16px' }} />
+            <h2 style={{ fontSize: 'clamp(22px,3.5vw,36px)', fontWeight: 800, color: '#0f172a', lineHeight: 1.4, marginBottom: 12 }}>
+              이것은 가상이 아닙니다.<br /><span style={{ color: '#dc2626' }}>실제 현장 인터뷰 발언</span>입니다.
+            </h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
+            {PAIN_QUOTES.map((q, i) => (
+              <div key={i} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '28px 32px', position: 'relative' }}>
+                <span style={{ position: 'absolute', top: -16, left: 24, fontSize: 56, color: '#fca5a5', fontWeight: 900, lineHeight: 1 }}>"</span>
+                <p style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', lineHeight: 1.6, marginBottom: 10, paddingTop: 8 }}>{q.quote}</p>
+                <p style={{ fontSize: 13, color: '#94a3b8' }}>— <strong style={{ color: '#64748b' }}>{q.name}</strong>, {q.role} <span style={{ marginLeft: 8, fontSize: 11, background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>{q.aos}</span></p>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: 16, padding: '28px 32px', textAlign: 'center' }}>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', lineHeight: 1.6 }}>
+              단순 매칭 플랫폼은 <span style={{ color: '#dc2626' }}>계약 후 책임지지 않습니다.</span><br />
+              S.H.I.E.L.D.는 <span style={{ color: '#2563eb' }}>배달의민족 + K-Car 수준의 무한 책임</span>을 AI 시스템으로 구현합니다.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── S.H.I.E.L.D. 6 Agents ── */}
+      <Section id="shield" style={{ padding: '80px 0', background: 'linear-gradient(160deg,#0f172a,#1e1b4b)' }}>
+        <div className="landing-container">
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <h2 style={{ fontSize: 'clamp(24px,4vw,42px)', fontWeight: 900, color: '#fff', marginBottom: 16 }}>
+              <span style={{ color: '#f87171' }}>S.H.I.E.L.D.</span> — 절대 실패할 수 없는 6중 AI 감리 시스템
+            </h2>
+            <p style={{ fontSize: 16, color: '#64748b', maxWidth: 580, margin: '0 auto' }}>
+              계약 시작과 동시에 6개의 특화 AI 에이전트가 독립적으로 가동되어 리스크를 교차 검증합니다.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
+            {SHIELD_AGENTS.map((agent, i) => {
+              const c = agentColors[agent.color];
+              return (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 20, padding: '32px 28px', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}
+                  className="hover:scale-[1.02]">
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 3, background: c.text }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <agent.icon style={{ width: 26, height: 26 }} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontSize: 28, fontWeight: 900, color: c.text }}>{agent.letter}</span>
+                        <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{agent.code}</span>
+                      </div>
+                      <h3 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>{agent.title}</h3>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: c.text, marginBottom: 12, fontStyle: 'italic' }}>{agent.subtitle}</p>
+                  <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, marginBottom: 16 }}>{agent.desc}</p>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', background: 'rgba(255,255,255,0.06)', padding: '4px 12px', borderRadius: 99 }}>✓ {agent.persona}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Shield acronym footer */}
+          <div style={{ marginTop: 48, display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {SHIELD_AGENTS.map((a) => (
+              <div key={a.letter} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 20px' }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: agentColors[a.color].text }}>{a.letter}</span>
+                <span style={{ fontSize: 10, color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>{a.code.split(' ')[0]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Market Proof ── */}
+      <Section style={{ padding: '64px 0', background: '#fff' }}>
+        <div className="landing-container" style={{ maxWidth: 820 }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>시장이 증명하는 폭발적 수요</h2>
+            <p style={{ fontSize: 13, color: '#94a3b8' }}>경쟁사 마로솔: 2021년 9억 → 2022년 51억 (5.8배 급성장), 2023 상반기 수주 100억</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+            {MARKET_STATS.map((s, i) => (
+              <div key={i} style={{ textAlign: 'center', padding: '24px 12px', background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                <span style={{ display: 'block', fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{s.value}</span>
+                <span style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ── 3 Persona CTA Cards ── */}
+      <Section id="cta" style={{ padding: '80px 0', background: 'linear-gradient(160deg,#eff6ff,#faf5ff,#fef2f2)' }}>
+        <div className="landing-container">
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h2 className="landing-section-title">나에게 맞는 <strong>다음 스텝</strong>을 선택하세요</h2>
+            <p style={{ marginTop: 16, color: '#dc2626', fontWeight: 700, fontSize: 16 }}>
+              🔥 현재 대기 리스트 <span style={{ fontSize: 24, fontWeight: 900 }}>{waitlist}명</span> 등록 완료 — 선착순 100명 한정 에스크로 수수료 면제
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
+            {PERSONA_CTAS.map((cta, i) => {
+              const c = ctaColors[cta.color];
+              return (
+                <div key={i} style={{ background: '#fff', borderRadius: 20, padding: '36px 28px', border: `2px solid ${c.border}`, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: c.bg, padding: '4px 12px', borderRadius: 99, alignSelf: 'flex-start', marginBottom: 12 }}>{cta.badge}</span>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>{cta.persona}</p>
+                  <h3 style={{ fontSize: 21, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{cta.title}</h3>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: c.accent, marginBottom: 14 }}>{cta.subtitle}</p>
+                  <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 8 }}>{cta.desc}</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 20 }}>입력 정보: {cta.fields}</p>
+                  <div style={{ marginTop: 'auto' }}>
+                    <Link to={cta.link}>
+                      <Button style={{ width: '100%', background: cta.color === 'slate' ? '#1e293b' : c.accent, color: '#fff', fontWeight: 700, height: 48, borderRadius: 12, border: 'none' }}>
+                        {cta.title} <ArrowRight style={{ width: 16, height: 16, marginLeft: 8 }} />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Final Urgency CTA ── */}
+      <section style={{ padding: '80px 0', background: '#0f172a', borderTop: '6px solid #dc2626' }}>
+        <div className="landing-container" style={{ textAlign: 'center', maxWidth: 700 }}>
+          <Calendar style={{ width: 44, height: 44, color: '#ef4444', margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: 'clamp(22px,3.5vw,36px)', fontWeight: 900, color: '#fff', marginBottom: 16, lineHeight: 1.35 }}>
+            절대 고철이 될 수 없는 구조,<br /><span style={{ color: '#f87171' }}>지금 S.H.I.E.L.D. 보호를 선점하세요</span>
+          </h2>
+          <p style={{ fontSize: 16, color: '#64748b', marginBottom: 32, lineHeight: 1.8 }}>
+            안심 보증 수요 폭발로 로컬 파트너 배정이 지연될 수 있습니다.<br />
+            <strong style={{ color: '#e2e8f0' }}>선착순 100명</strong> 한정 에스크로 수수료 면제 프로모션 진행 중.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+            <Link to="/home">
+              <Button size="lg" style={{ background: '#dc2626', color: '#fff', fontWeight: 800, fontSize: 16, height: 54, padding: '0 32px', borderRadius: 12, boxShadow: '0 0 30px rgba(220,38,38,0.35)', border: 'none' }}>
+                프로모션 대기 등록 <ArrowRight style={{ width: 18, height: 18, marginLeft: 8 }} />
+              </Button>
+            </Link>
+            <Link to="/home">
+              <Button size="lg" variant="outline" style={{ borderColor: '#334155', color: '#94a3b8', height: 54, padding: '0 28px', borderRadius: 12 }}>
+                무상 컨설팅 신청
+              </Button>
+            </Link>
+          </div>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['등록 시 비용 없음', 'S.H.I.E.L.D. 6중 보호', '24h 내 담당자 연락'].map((t, i) => (
+              <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569' }}>
+                <CheckCircle2 style={{ width: 14, height: 14, color: '#10b981' }} />{t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
       <footer className="landing-footer">
         <div className="landing-container landing-footer-inner">
           <div className="landing-footer-grid">
             <div>
               <div className="landing-footer-logo">
-                <div className="landing-logo-icon">R</div>
-                <span className="landing-footer-brand">로봇 SI 매칭 플랫폼</span>
+                <div className="landing-logo-icon" style={{ background: '#dc2626', width: 28, height: 28, fontSize: 11, borderRadius: 8 }}>S</div>
+                <span className="landing-footer-brand">S.H.I.E.L.D. 로봇 SI 안심 보증 플랫폼</span>
               </div>
               <p className="landing-footer-about">
-                로봇 도입의 모든 과정을 투명하게 연결하고,
-                <br />
-                안전한 거래와 지속적인 AS를 보장합니다.
+                Solvency · Hardware · Investment · Escrow · Local A/S · Dispute<br />
+                6중 AI 감리 시스템으로 절대 실패할 수 없는 로봇 도입을 구현합니다.
               </p>
             </div>
             <div>
-              <h4 className="landing-footer-heading">서비스</h4>
+              <h4 className="landing-footer-heading">핵심 서비스</h4>
               <ul className="landing-footer-links">
-                <li><Link to="/home">SI 파트너 검색</Link></li>
+                <li><Link to="/home">파트너 매칭</Link></li>
                 <li><Link to="/calculator">RaaS 계산기</Link></li>
-                <li><Link to="/search">파트너 상세 검색</Link></li>
+                <li><Link to="/search">투명 평판 검색</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="landing-footer-heading">회원가입</h4>
               <ul className="landing-footer-links">
-                <li><Link to="/signup/buyer">수요기업 가입</Link></li>
-                <li><Link to="/signup/partner">SI 파트너 가입</Link></li>
+                <li><Link to="/signup/buyer">수요기업</Link></li>
+                <li><Link to="/signup/partner">SI 파트너</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="landing-footer-heading">고객지원</h4>
+              <h4 className="landing-footer-heading">고객 지원</h4>
               <ul className="landing-footer-links">
                 <li><a href="mailto:support@robotsi.com">support@robotsi.com</a></li>
-                <li><span>서울특별시 강남구 테헤란로</span></li>
+                <li><span>서울 강남구 테헤란로</span></li>
               </ul>
             </div>
           </div>
-          <div className="landing-footer-bottom">
-            <span>© 2026 로봇 SI 매칭 플랫폼. All rights reserved.</span>
-          </div>
+          <div className="landing-footer-bottom">© 2026 S.H.I.E.L.D. 로봇 SI 안심 보증 플랫폼. All rights reserved.</div>
         </div>
       </footer>
     </div>
