@@ -37,9 +37,9 @@ function useFadeIn() {
   return { ref, vis };
 }
 
-function Section({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
+function Section({ children, className = '', id, style }: { children: React.ReactNode; className?: string; id?: string; style?: React.CSSProperties }) {
   const { ref, vis } = useFadeIn();
-  return <section id={id} ref={ref} className={`landing-section ${vis ? 'landing-visible' : ''} ${className}`}>{children}</section>;
+  return <section id={id} ref={ref} style={style} className={`landing-section ${vis ? 'landing-visible' : ''} ${className}`}>{children}</section>;
 }
 
 function useWaitlist() {
@@ -171,53 +171,91 @@ export function LandingPage() {
         </div>
       </Section>
 
-      {/* ── S.H.I.E.L.D. 6 Agents ── */}
-      <Section id="shield" style={{ padding: '80px 0', background: 'linear-gradient(160deg,#0f172a,#1e1b4b)' }}>
-        <div className="landing-container">
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <h2 style={{ fontSize: 'clamp(24px,4vw,42px)', fontWeight: 900, color: '#fff', marginBottom: 16 }}>
-              <span style={{ color: '#f87171' }}>S.H.I.E.L.D.</span> — 절대 실패할 수 없는 6중 AI 감리 시스템
+      {/* ── S.H.I.E.L.D. 6 Agents — Premium Redesign ── */}
+      <Section id="shield" style={{ padding: '100px 0', background: 'linear-gradient(180deg,#080d1a 0%,#0f172a 55%,#0a1020 100%)', position: 'relative', overflow: 'hidden' }}>
+        {/* Ambient glow orbs */}
+        <div style={{ position: 'absolute', top: '5%', left: '-8%', width: 500, height: 500, background: 'radial-gradient(circle,rgba(220,38,38,0.07) 0%,transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '5%', right: '-8%', width: 600, height: 600, background: 'radial-gradient(circle,rgba(37,99,235,0.07) 0%,transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+        <div className="landing-container" style={{ position: 'relative' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 20px', borderRadius: 999, background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.28)', color: '#fca5a5', fontSize: 12, fontWeight: 700, marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>6중 AI 감리 시스템 · S.H.I.E.L.D.</div>
+            <h2 style={{ fontSize: 'clamp(26px,4.5vw,50px)', fontWeight: 900, color: '#fff', marginBottom: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+              <span style={{ background: 'linear-gradient(135deg,#f87171 0%,#fbbf24 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>S.H.I.E.L.D.</span>
+              <span style={{ color: '#e2e8f0' }}> — 계약 시작과</span><br />
+              <span style={{ color: '#e2e8f0' }}>동시에 6개 에이전트가 가동됩니다</span>
             </h2>
-            <p style={{ fontSize: 16, color: '#64748b', maxWidth: 580, margin: '0 auto' }}>
-              계약 시작과 동시에 6개의 특화 AI 에이전트가 독립적으로 가동되어 리스크를 교차 검증합니다.
-            </p>
+            <p style={{ fontSize: 16, color: '#64748b', maxWidth: 540, margin: '0 auto 36px', lineHeight: 1.7 }}>하나의 에이전트가 놓치면 나머지 5개가 즉시 커버합니다. 도입 실패는 구조적으로 불가능합니다.</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
+              {[{ v: '6중', l: '리스크 교차 검증' }, { v: '24/7', l: '에이전트 상시 가동' }, { v: '0%', l: '도입 실패 리스크' }].map((s, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <span style={{ display: 'block', fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>{s.v}</span>
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>{s.l}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
+          {/* 2-col agent cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(460px,1fr))', gap: 20, maxWidth: 1080, margin: '0 auto' }}>
             {SHIELD_AGENTS.map((agent, i) => {
               const c = agentColors[agent.color];
               return (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 20, padding: '32px 28px', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}
-                  className="hover:scale-[1.02]">
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 3, background: c.text }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <agent.icon style={{ width: 26, height: 26 }} />
+                <div key={i}
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 24, padding: '28px 30px', display: 'flex', gap: 22, alignItems: 'flex-start', position: 'relative', overflow: 'hidden', transition: 'all 0.3s', backdropFilter: 'blur(4px)' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = 'rgba(255,255,255,0.06)'; el.style.borderColor = c.text + '44'; el.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.transform = 'translateY(0)'; }}
+                >
+                  {/* Corner glow */}
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: 160, height: 160, background: `radial-gradient(circle at top right,${c.text}12,transparent 70%)`, pointerEvents: 'none' }} />
+                  {/* Top accent line */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${c.text}00,${c.text},${c.text}00)` }} />
+
+                  {/* Letter icon */}
+                  <div style={{ flexShrink: 0, width: 68, height: 68, borderRadius: 18, background: `linear-gradient(135deg,${c.text}20,${c.text}08)`, border: `1.5px solid ${c.text}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <span style={{ fontSize: 34, fontWeight: 900, color: c.text, lineHeight: 1 }}>{agent.letter}</span>
+                    <span style={{ position: 'absolute', top: -9, right: -9, width: 22, height: 22, borderRadius: '50%', background: '#080d1a', border: `1.5px solid ${c.text}55`, fontSize: 10, fontWeight: 800, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                  </div>
+
+                  {/* Text block */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: c.text, background: `${c.text}18`, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{agent.code}</span>
                     </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <span style={{ fontSize: 28, fontWeight: 900, color: c.text }}>{agent.letter}</span>
-                        <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{agent.code}</span>
-                      </div>
-                      <h3 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>{agent.title}</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9', marginBottom: 10, lineHeight: 1.3 }}>{agent.title}</h3>
+
+                    {/* Key question box */}
+                    <div style={{ background: `${c.text}12`, border: `1px solid ${c.text}28`, borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0, lineHeight: 1.55 }}>💬 {agent.subtitle}</p>
+                    </div>
+
+                    <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.75, marginBottom: 14 }}>{agent.desc}</p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: c.text, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>{agent.persona}</span>
                     </div>
                   </div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: c.text, marginBottom: 12, fontStyle: 'italic' }}>{agent.subtitle}</p>
-                  <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, marginBottom: 16 }}>{agent.desc}</p>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', background: 'rgba(255,255,255,0.06)', padding: '4px 12px', borderRadius: 99 }}>✓ {agent.persona}</span>
                 </div>
               );
             })}
           </div>
 
-          {/* Shield acronym footer */}
-          <div style={{ marginTop: 48, display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {SHIELD_AGENTS.map((a) => (
-              <div key={a.letter} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 20px' }}>
-                <span style={{ fontSize: 22, fontWeight: 900, color: agentColors[a.color].text }}>{a.letter}</span>
-                <span style={{ fontSize: 10, color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>{a.code.split(' ')[0]}</span>
-              </div>
-            ))}
+          {/* Bottom acronym banner */}
+          <div style={{ marginTop: 60, padding: '28px 32px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, maxWidth: 820, margin: '60px auto 0' }}>
+            <p style={{ fontSize: 11, color: '#334155', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>S · H · I · E · L · D — 각 글자가 하나의 독립 AI 에이전트입니다</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {SHIELD_AGENTS.map((a) => {
+                const c = agentColors[a.color];
+                return (
+                  <div key={a.letter} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 18px', background: `${c.text}0e`, border: `1px solid ${c.text}30`, borderRadius: 14, minWidth: 76, gap: 5 }}>
+                    <span style={{ fontSize: 24, fontWeight: 900, color: c.text }}>{a.letter}</span>
+                    <span style={{ fontSize: 9, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1.4 }}>{a.code.split(' ')[0]}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </Section>

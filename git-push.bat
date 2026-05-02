@@ -1,3 +1,3 @@
 git add .
-git commit -m "feat: add pricing plan section and value proposition doc"
+git commit -m "feat: redesign SHIELD section with premium dark cards and fix Section style prop"
 git push origin main
